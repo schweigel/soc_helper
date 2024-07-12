@@ -119,11 +119,15 @@ class carclass:
         elif tpType == 2:
             # Botschaft ist ein Folgeteil einer mehrteiligen Botschaft. Der Index sollte im unteren Nibble von Byte 0 stehen
             # hier wird einfach gehofft, daß die Botschaften in der richtigen Reihenfolge ankommen. Sie werden stumpf angehängt.
-            self.payload.extend(data[1:8])     # Je Nachfolger sollten 7 Nutzbytes kommen
-            self.bytesReceived += 7
-            if self.bytesReceived >= self.bytesToReceive:
-                self.messageComplete = True
-            logging.debug(f'Mehrteilige Botschaft komplett: {self.payload}')
+            # FIXME: Wenn hier kein erster Teil vorhanden ist, sondern unmotiviert ein zweiter kommt, knallt es. Momentan bei
+            # StandardFuelLevel so mit Golf7, der immer wieder ein [32,16,0,0,0,0,0,0] sendet, warum auch immer
+            if hasattr(self, 'payload') and hasattr(self, 'bytesToReceive'):
+                self.payload.extend(data[1:8])     # Je Nachfolger sollten 7 Nutzbytes kommen
+                self.bytesReceived += 7
+                if self.bytesReceived >= self.bytesToReceive:
+                    self.messageComplete = True
+                    self.bytesToReceive = 0
+                logging.debug(f'Mehrteilige Botschaft komplett: {self.payload}')
         elif tpType == 0:
             # Einteilige Botschaft
             self.payload = [id]
